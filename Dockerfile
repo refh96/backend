@@ -1,4 +1,4 @@
-FROM node
+FROM node:18
 
 ENV HOME=/app
 RUN mkdir /app
