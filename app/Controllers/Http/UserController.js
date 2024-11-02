@@ -1,7 +1,6 @@
 'use strict'
 
 const { type } = require("os");
-
 const User = use('App/Models/User')
 const { validateAll } = use('Validator')
 
@@ -40,15 +39,20 @@ class UserController {
   // PUT
   async update({ params, request, response }) {
     const input = request.all();
-
-
-    await User.query().where('id', params.id).update(input);
-
+    const user = await User.findOrFail(params.id);
+  
+    // Actualizar solo si el valor existe en input
+    user.merge(input);
+  
+    // Guardar el usuario (esto disparará el hook que hashea la contraseña)
+    await user.save();
+  
     return response.json({
       res: true,
-      message: "registro modificado correctamente"
-    })
+      message: "Registro modificado correctamente",
+    });
   }
+  
 
   async destroy({ params, request, response }) {
     const user = await User.findOrFail(params.id)
@@ -63,7 +67,7 @@ class UserController {
   async validar(input, id = null) {
     return await validateAll(input, {
       'username': 'required|min:3|max:20',
-      'numero': 'required|unique:users,numero|min:8|max:15',
+      'numero': 'required|min:8|max:15|unique:users,numero',
       'email': 'required|unique:users,email|min:10|max:100',
       'password': 'required'
     })

@@ -10,8 +10,11 @@ class ReservaSchema extends Schema {
       table.integer('servicio_id').unsigned().references('id').inTable('servicios').onDelete('CASCADE')
       table.date('fecha').notNullable()
       table.time('hora').notNullable()
-      table.string('estado').notNullable()
-      table.string('tipo_vehiculo').notNullable()
+      table.integer('estado_id').unsigned().references('id').inTable('estados').onDelete('cascade')
+      table.integer('tipo_vehiculo_id').unsigned().references('id').inTable('tipo_vehiculos').onDelete('cascade')
+      table.string('url_antes')
+      table.string('url_despues')
+      table.integer('Total')
       table.timestamps()
     })
   }
