@@ -11,9 +11,6 @@ class Servicio extends Model {
     static get hidden(){
         return ['created_at','updated_at']
     }
-    atributos () {
-        return this.belongsToMany('App/Models/Atributo').pivotTable('atributo_servicio')
-      }
     reservas() {
         return this.hasMany('App/Models/Reserva');
     }

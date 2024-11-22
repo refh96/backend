@@ -54,20 +54,27 @@ class UserController {
   }
   
 
-  async destroy({ params, request, response }) {
-    const user = await User.findOrFail(params.id)
+  async destroy({ params, response }) {
+    // Buscar al usuario por su ID
+    const user = await User.findOrFail(params.id);
+  
+    // Eliminar todos los tokens asociados al usuario
+    await user.tokens().delete();
+  
+    // Eliminar el usuario después de borrar los tokens
     await user.delete();
-
+  
     return response.json({
       res: true,
-      message: "usuario eliminado correctamente"
-    })
+      message: "Usuario eliminado correctamente"
+    });
   }
+  
 
   async validar(input, id = null) {
     return await validateAll(input, {
       'username': 'required|min:3|max:20',
-      'numero': 'required|min:8|max:15|unique:users,numero',
+      'numero': 'required|min:9|max:15|unique:users,numero',
       'email': 'required|unique:users,email|min:10|max:100',
       'password': 'required'
     })

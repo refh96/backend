@@ -24,9 +24,7 @@ class Reserva extends Model {
     return this.belongsTo('App/Models/Estado') // Nueva relación
   }
 
-  static get hidden () {
-    return ['created_at', 'updated_at']
-  }
+  
 }
 
 module.exports = Reserva

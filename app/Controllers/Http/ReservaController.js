@@ -42,24 +42,20 @@ class ReservaController {
     const servicio = await Servicio.findOrFail(input.servicio_id);
     const tipoVehiculo = await TipoVehiculo.findOrFail(input.tipo_vehiculo_id);
 
-    // Comprobar atributos ya asociados al servicio
-    const atributosServicio = await servicio.atributos().fetch();
-    const atributosServicioIds = atributosServicio.rows.map(attr => attr.id);
+    /*
+    // Ajuste del costo del tipo de vehículo según el servicio
+    let costoVehiculoAjustado = tipoVehiculo.costo;
 
-    // Verificar si alguno de los atributos ya está asociado al servicio
-    const atributosDuplicados = atributoIds.filter(id => atributosServicioIds.includes(id));
-    if (atributosDuplicados.length > 0) {
-      // Obtener los nombres de los atributos duplicados
-      const atributosDuplicadosNombres = await Atributo.query()
-        .whereIn('id', atributosDuplicados)
-        .pluck('nombre_atributo'); // Obtener solo los nombres de los atributos
-
-      // Construir el mensaje de error con los nombres
-      return response.status(400).json({
-        res: false,
-        message: 'Los siguientes atributos ya están asociados al servicio: ' + atributosDuplicadosNombres.join(', '),
-      });
+    // Sumar costo adicional según el tipo de servicio
+    
+     if (servicio.nombre_servicio === "Lavado Basico") {
+      // No se añade ningún valor adicional
+    } else if (servicio.nombre_servicio === "Lavado Premium") {
+      costoVehiculoAjustado += 5000; // Sumar 5 mil para Lavado Premium
+    } else if (servicio.nombre_servicio === "Lavado Detailing") {
+      costoVehiculoAjustado += 10000; // Sumar 10 mil para Lavado Detailing
     }
+    */
 
 
     // Calcular el total usando la función
@@ -71,22 +67,55 @@ class ReservaController {
       const totalCostoAtributos = atributos.rows.reduce((suma, atributo) => suma + atributo.costo_atributo, 0);
       total += totalCostoAtributos; // Sumar el costo de los atributos al total
     }
+    // Obtener los nombres de los atributos
+    let nombresAtributos = '';
+    if (atributoIds.length > 0) {
+      const atributos = await Atributo.query().whereIn('id', atributoIds).pluck('nombre_atributo');
+      nombresAtributos = atributos.join(', '); // Combinar los nombres en una cadena
+    }
+
 
     // Crear la reserva con el total calculado
     input.total = total;
     const reserva = await Reserva.create(input);
     //envia correo de creacion de reserva
-    const user = await User.findOrFail(input.user_id);
+    /*const user = await User.findOrFail(input.user_id);
+    const estado = await Estado.findOrFail(input.estado_id); // Obtener el estado actualizado
     const { data, error } = await resend.emails.send({
       from: 'Full Wash Conce <no-reply@fullwash.site>',
       to: [user.email],
       subject: 'Full Wash Conce',
-      html: '<strong>Gracias por reservar con nosotros!</strong>',
+      html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
+      <div style="background-color: #f4f4f4; padding: 20px; text-align: center;">
+        <h1 style="color: #333; margin-bottom: 10px;">¡Gracias por reservar con Full Wash Conce!</h1>
+      </div>
+      <div style="padding: 20px;">
+        <p style="font-size: 16px; color: #555;">Estimado/a <strong>${user.username}</strong>,</p>
+        <p style="font-size: 16px; color: #555;">Nos complace informarte que tu reserva ha sido creada exitosamente. Aquí tienes los detalles de tu reserva:</p>
+        <div style="margin: 20px 0; padding: 15px; background-color: #e6f7ff; border-radius: 5px;">
+          <p style="font-size: 16px; color: #333;"><strong>${reserva.fecha}</strong> [Fecha de la reserva]</p>
+          <p style="font-size: 16px; color: #333;"><strong>${reserva.hora}</strong> [Hora de la reserva]</p>
+          <p style="font-size: 16px; color: #333;"><strong>${servicio.nombre_servicio}</strong> [Nombre del servicio]</p>
+          <p style="font-size: 16px; color: #333;"><strong>${nombresAtributos}</strong> [servicios extra]</p>
+          <p style="font-size: 16px; color: #333;"><strong>El estado de su reserva es: ${estado.nombre}</strong><br><p>${estado.mensaje}</p>
+          <p style="font-size: 16px; color: #333;"><strong>${reserva.total}</strong> [Costo Total]</p>
+        </div>
+        <p style="font-size: 16px; color: #555;">Si tienes alguna pregunta, no dudes en contactarnos.</p>
+        <p style="font-size: 16px; color: #555;">
+          Puedes hacerlo a través de nuestro 
+          <a href="https://wa.me/1234567890" style="color: #0f8b8d; text-decoration: none;" target="_blank">WhatsApp</a>.
+        </p>
+        <p style="font-size: 16px; color: #555;">¡Te esperamos!</p>
+      </div>
+      <div style="background-color: #f4f4f4; padding: 10px; text-align: center; font-size: 14px; color: #777;">
+        Full Wash Conce &copy; 2024. Todos los derechos reservados.
+      </div>
+    </div>`,
     });
     if (error) {
       return console.error({ error });
     }
-    console.log({ data });
+    console.log({ data });*/
 
     // Asociar atributos a la reserva si se proporcionaron
     if (atributoIds.length > 0) {
@@ -117,6 +146,11 @@ class ReservaController {
   }
 
 
+
+
+
+
+
   async update({ params, request, response }) {
     const input = request.only(['user_id', 'servicio_id', 'fecha', 'hora', 'estado_id', 'tipo_vehiculo_id']);
     const atributoIds = request.input('atributo_ids', []); // Obtenemos atributo_ids aparte
@@ -143,24 +177,7 @@ class ReservaController {
     // Obtener el servicio y el tipo de vehículo para calcular el precio
     const servicio = await Servicio.findOrFail(input.servicio_id);
     const tipoVehiculo = await TipoVehiculo.findOrFail(input.tipo_vehiculo_id);
-    // Comprobar atributos ya asociados al servicio
-    const atributosServicio = await servicio.atributos().fetch();
-    const atributosServicioIds = atributosServicio.rows.map(attr => attr.id);
-
-    // Verificar si alguno de los atributos ya está asociado al servicio
-    const atributosDuplicados = atributoIds.filter(id => atributosServicioIds.includes(id));
-    if (atributosDuplicados.length > 0) {
-      // Obtener los nombres de los atributos duplicados
-      const atributosDuplicadosNombres = await Atributo.query()
-        .whereIn('id', atributosDuplicados)
-        .pluck('nombre_atributo'); // Obtener solo los nombres de los atributos
-
-      // Construir el mensaje de error con los nombres
-      return response.status(400).json({
-        res: false,
-        message: 'Los siguientes atributos ya están asociados al servicio: ' + atributosDuplicadosNombres.join(', '),
-      });
-    }
+    
 
 
     // Calcular el total usando la función
@@ -172,6 +189,12 @@ class ReservaController {
       const totalCostoAtributos = atributos.rows.reduce((suma, atributo) => suma + atributo.costo_atributo, 0);
       total += totalCostoAtributos; // Sumar el costo de los atributos al total
     }
+    let nombresAtributos = '';
+    if (atributoIds.length > 0) {
+      const atributos = await Atributo.query().whereIn('id', atributoIds).pluck('nombre_atributo');
+      nombresAtributos = atributos.join(', '); // Combinar los nombres en una cadena
+    }
+
 
     // Actualizar la reserva con el total calculado
     input.total = total;
@@ -184,7 +207,7 @@ class ReservaController {
     }
 
     // Obtener el usuario y el estado para el correo de notificación
-    const user = await User.findOrFail(input.user_id);
+    /*const user = await User.findOrFail(input.user_id);
     const estado = await Estado.findOrFail(input.estado_id); // Obtener el estado actualizado
 
     // Enviar correo con el mensaje del nuevo estado
@@ -192,13 +215,40 @@ class ReservaController {
       from: 'Full Wash Conce <no-reply@fullwash.site>',
       to: [user.email],
       subject: 'Actualización de Estado de su Reserva',
-      html: `<strong>El estado de su reserva ha cambiado a: ${estado.nombre}</strong><br><p>${estado.mensaje}</p>`,
+      html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
+              <div style="background-color: #f4f4f4; padding: 20px; text-align: center;">
+              <h1 style="color: #333; margin-bottom: 10px;">¡Su reserva a sido actualizada!</h1>
+            </div>
+            <div style="padding: 20px;">
+              <p style="font-size: 16px; color: #555;">Estimado/a <strong>${user.username}</strong>,</p>
+              <p style="font-size: 16px; color: #555;">Le informamos que su reserva a sido actualizada. Aquí tienes los detalles:</p>
+              <div style="margin: 20px 0; padding: 15px; background-color: #e6f7ff; border-radius: 5px;">
+              <p style="font-size: 16px; color: #333;"><strong>El estado de su reserva ha cambiado a: ${estado.nombre}</strong><br><p>${estado.mensaje}</p>
+              <p style="font-size: 16px; color: #333;"><strong>${reserva.fecha}</strong> [Fecha de la reserva]</p>
+              <p style="font-size: 16px; color: #333;"><strong>${reserva.hora}</strong> [Hora de la reserva]</p>
+              <p style="font-size: 16px; color: #333;"><strong>${servicio.nombre_servicio}</strong> [Nombre del servicio]</p>
+              <p style="font-size: 16px; color: #333;"><strong>${nombresAtributos}</strong> [servicios extra]</p>
+              <p style="font-size: 16px; color: #333;"><strong>${reserva.total}</strong> [Costo Total]</p>
+            </div>
+              <p style="font-size: 16px; color: #555;">Si tienes alguna pregunta, no dudes en contactarnos.</p>
+              <p style="font-size: 16px; color: #555;">
+                Puedes hacerlo a través de nuestro 
+              <a href="https://wa.me/1234567890" style="color: #0f8b8d; text-decoration: none;" target="_blank">WhatsApp</a>.
+              </p>
+              <p style="font-size: 16px; color: #555;">¡Te esperamos!</p>
+            </div>
+            <div style="background-color: #f4f4f4; padding: 10px; text-align: center; font-size: 14px; color: #777;">
+              Full Wash Conce &copy; 2024. Todos los derechos reservados.
+            </div>
+            </div>`,
     });
 
     if (error) {
       return console.error({ error });
     }
     console.log({ data });
+    */
+
 
     return response.json({
       res: true,

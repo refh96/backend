@@ -53,7 +53,7 @@ class TipoVehiculoController {
       const tipoVehiculo = await TipoVehiculo.findOrFail(params.id);
       tipoVehiculo.merge(input);
       await tipoVehiculo.save();
-  
+      /*
       // Obtener todas las reservas que usan este tipo de vehículo
       const reservas = await Reserva.query()
         .where('tipo_vehiculo_id', params.id)
@@ -78,7 +78,7 @@ class TipoVehiculoController {
         // Asignar el total a la reserva y guardar
         reserva.total = totalReserva;
         await reserva.save();
-      }
+      }*/
   
       return response.json({
         res: true,
