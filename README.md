@@ -27,6 +27,7 @@ Run the following command to run startup migrations.
 adonis migration:run
 ```
 #### Instrucciones adicionales
-para generar el app key en el archivo .env utiliza el comando adonis key:generate o desde linux node ace key:generate
-Para el entorno de desarrollo en localhost se ocupo XAMPP Control Panel para correr apache y MYSQL y poder administrar la base de datos desde local 
-se crea una base de datos con el nombre que sale en el .env en este caso "backend" y no olvides ejecutar el npm install para agregar las dependencias del backend, luego desde la terminal del proyecto usamos el comando adonis migration:run(si se requiere utiliza --force) para crear las tablas y el comando adonis seed(si se requiere utiliza --force) para rellenar las tablas, para correr el proyecto usamos el comando adonis serve --dev.
+para generar el app key en el archivo .env utiliza el comando adonis key:generate o desde linux node ace key:generate.
+
+Para el entorno de desarrollo en localhost se ocupo XAMPP Control Panel para correr apache y MYSQL y poder administrar la base de datos desde local. 
+Se crea una base de datos con el nombre que sale en el .env en este caso "backend" y no olvides ejecutar el npm install para agregar las dependencias del backend, luego desde la terminal del proyecto usamos el comando adonis migration:run(si se requiere utiliza --force) para crear las tablas y el comando adonis seed(si se requiere utiliza --force) para rellenar las tablas, para correr el proyecto usamos el comando adonis serve --dev.
