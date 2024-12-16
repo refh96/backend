@@ -10,11 +10,12 @@ const { validate } = use('Validator')
 const Helpers = use('Helpers')
 const { Resend } = use('resend')
 const resend = new Resend('re_gCUYt5bo_9QmceeYiw74BvDyihwnPKZzU');
+const Notification = use('App/Models/Notification');
 class ReservaController {
 
   // Método para calcular el total
-  _calcularTotal(servicio, tipoVehiculo) {
-    return servicio.precio + tipoVehiculo.costo;
+  _calcularTotal(servicio, costoVehiculoAjustado) {
+    return servicio.precio + costoVehiculoAjustado;
   }
 
   async store({ request, response }) {
@@ -42,24 +43,39 @@ class ReservaController {
     const servicio = await Servicio.findOrFail(input.servicio_id);
     const tipoVehiculo = await TipoVehiculo.findOrFail(input.tipo_vehiculo_id);
 
-    /*
+    
     // Ajuste del costo del tipo de vehículo según el servicio
     let costoVehiculoAjustado = tipoVehiculo.costo;
 
     // Sumar costo adicional según el tipo de servicio
     
-     if (servicio.nombre_servicio === "Lavado Basico") {
-      // No se añade ningún valor adicional
-    } else if (servicio.nombre_servicio === "Lavado Premium") {
-      costoVehiculoAjustado += 5000; // Sumar 5 mil para Lavado Premium
-    } else if (servicio.nombre_servicio === "Lavado Detailing") {
-      costoVehiculoAjustado += 10000; // Sumar 10 mil para Lavado Detailing
+     if (servicio.nombre_servicio === "Lavado Detailing" && tipoVehiculo.id === 2) {
+        costoVehiculoAjustado += 40000; 
+    } else if (servicio.nombre_servicio === "Lavado Detailing" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 80000;
+    }else if (servicio.nombre_servicio === "Lavado de Tapices" && tipoVehiculo.id === 2) {
+      costoVehiculoAjustado += 5000;
+    }else if (servicio.nombre_servicio === "Lavado de Tapices" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 15000;
+    }else if (servicio.nombre_servicio === "Lavado de Alfombra" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 5000;
+    }else if (servicio.nombre_servicio === "Limpieza de Chasis" && tipoVehiculo.id === 2) {
+      costoVehiculoAjustado += 10000;
+    }else if (servicio.nombre_servicio === "Limpieza de Chasis" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 5000;
+    }else if (servicio.nombre_servicio === "Pulido Basico" && tipoVehiculo.id === 2) {
+      costoVehiculoAjustado += 50000;
+    }else if (servicio.nombre_servicio === "Pulido Basico" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 95000;
+    }else if (servicio.nombre_servicio === "Pulido Avanzado" && tipoVehiculo.id === 2) {
+      costoVehiculoAjustado += 45000;
+    }else if (servicio.nombre_servicio === "Pulido Avanzado" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 90000;
     }
-    */
 
 
     // Calcular el total usando la función
-    let total = this._calcularTotal(servicio, tipoVehiculo);
+    let total = this._calcularTotal(servicio, costoVehiculoAjustado);
 
     // Agregar el costo de los atributos si se proporcionan
     if (atributoIds.length > 0) {
@@ -78,8 +94,18 @@ class ReservaController {
     // Crear la reserva con el total calculado
     input.total = total;
     const reserva = await Reserva.create(input);
+
+    // Obtener el usuario
+    const user = await User.findOrFail(input.user_id);
+    
+    await Notification.create({
+      type: 'create',
+      message: `La reserva para el usuario ${user.username} con el servicio ${servicio.nombre_servicio} ha sido creada.`,
+    });
+
+
+
     //envia correo de creacion de reserva
-    /*const user = await User.findOrFail(input.user_id);
     const estado = await Estado.findOrFail(input.estado_id); // Obtener el estado actualizado
     const { data, error } = await resend.emails.send({
       from: 'Full Wash Conce <no-reply@fullwash.site>',
@@ -103,7 +129,7 @@ class ReservaController {
         <p style="font-size: 16px; color: #555;">Si tienes alguna pregunta, no dudes en contactarnos.</p>
         <p style="font-size: 16px; color: #555;">
           Puedes hacerlo a través de nuestro 
-          <a href="https://wa.me/1234567890" style="color: #0f8b8d; text-decoration: none;" target="_blank">WhatsApp</a>.
+          <a href="https://wa.me/56992646017" style="color: #0f8b8d; text-decoration: none;" target="_blank">WhatsApp</a>.
         </p>
         <p style="font-size: 16px; color: #555;">¡Te esperamos!</p>
       </div>
@@ -115,8 +141,8 @@ class ReservaController {
     if (error) {
       return console.error({ error });
     }
-    console.log({ data });*/
-
+    console.log({ data });
+    
     // Asociar atributos a la reserva si se proporcionaron
     if (atributoIds.length > 0) {
       await reserva.atributos().attach(atributoIds);
@@ -177,11 +203,44 @@ class ReservaController {
     // Obtener el servicio y el tipo de vehículo para calcular el precio
     const servicio = await Servicio.findOrFail(input.servicio_id);
     const tipoVehiculo = await TipoVehiculo.findOrFail(input.tipo_vehiculo_id);
+
+    // Ajuste del costo del tipo de vehículo según el servicio
+    let costoVehiculoAjustado = tipoVehiculo.costo;
+
+    // Sumar costo adicional según el tipo de servicio
     
+     if (servicio.nombre_servicio === "Lavado Detailing" && tipoVehiculo.id === 2) {
+        costoVehiculoAjustado += 40000; 
+    } else if (servicio.nombre_servicio === "Lavado Detailing" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 80000; // Sumar 5 mil para Lavado Premium
+    }else if (servicio.nombre_servicio === "Lavado de Tapices" && tipoVehiculo.id === 2) {
+      costoVehiculoAjustado += 5000;
+    }else if (servicio.nombre_servicio === "Lavado de Tapices" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 15000;
+    }else if (servicio.nombre_servicio === "Lavado de Alfombra" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 5000;
+    }else if (servicio.nombre_servicio === "Limpieza de Motor" && tipoVehiculo.id === 2) {
+      costoVehiculoAjustado += 5000;
+    }else if (servicio.nombre_servicio === "Limpieza de Motor" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 5000;
+    }else if (servicio.nombre_servicio === "Limpieza de Chasis" && tipoVehiculo.id === 2) {
+      costoVehiculoAjustado += 5000;
+    }else if (servicio.nombre_servicio === "Limpieza de Chasis" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 5000;
+    }else if (servicio.nombre_servicio === "Pulido Basico" && tipoVehiculo.id === 2) {
+      costoVehiculoAjustado += 50000;
+    }else if (servicio.nombre_servicio === "Pulido Basico" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 95000;
+    }else if (servicio.nombre_servicio === "Pulido Avanzado" && tipoVehiculo.id === 2) {
+      costoVehiculoAjustado += 45000;
+    }else if (servicio.nombre_servicio === "Pulido Avanzado" && tipoVehiculo.id === 3) {
+      costoVehiculoAjustado += 90000;
+    }
+
 
 
     // Calcular el total usando la función
-    let total = this._calcularTotal(servicio, tipoVehiculo);
+    let total = this._calcularTotal(servicio, costoVehiculoAjustado) ;
 
     // Agregar el costo de los atributos si se proporcionan
     if (atributoIds.length > 0) {
@@ -202,12 +261,18 @@ class ReservaController {
     await reserva.save();
 
     // Actualizar los atributos asociados
-    if (atributoIds.length > 0) {
-      await reserva.atributos().sync(atributoIds); // Sincroniza los atributos
-    }
+    
+    await reserva.atributos().sync(atributoIds); // Sincroniza los atributos
+    
+
+     // Obtener el usuario
+     const user = await User.findOrFail(input.user_id);
+     await Notification.create({
+       type: 'create',
+       message: `La reserva para el usuario ${user.username} con el servicio ${servicio.nombre_servicio} ha sido Editada.`,
+     });
 
     // Obtener el usuario y el estado para el correo de notificación
-    /*const user = await User.findOrFail(input.user_id);
     const estado = await Estado.findOrFail(input.estado_id); // Obtener el estado actualizado
 
     // Enviar correo con el mensaje del nuevo estado
@@ -233,7 +298,7 @@ class ReservaController {
               <p style="font-size: 16px; color: #555;">Si tienes alguna pregunta, no dudes en contactarnos.</p>
               <p style="font-size: 16px; color: #555;">
                 Puedes hacerlo a través de nuestro 
-              <a href="https://wa.me/1234567890" style="color: #0f8b8d; text-decoration: none;" target="_blank">WhatsApp</a>.
+              <a href="https://wa.me/56992646017" style="color: #0f8b8d; text-decoration: none;" target="_blank">WhatsApp</a>.
               </p>
               <p style="font-size: 16px; color: #555;">¡Te esperamos!</p>
             </div>
@@ -247,7 +312,7 @@ class ReservaController {
       return console.error({ error });
     }
     console.log({ data });
-    */
+    
 
 
     return response.json({
@@ -260,6 +325,15 @@ class ReservaController {
   async destroy({ params, response }) {
     const reserva = await Reserva.findOrFail(params.id)
     await reserva.delete()
+
+     // Obtener el usuario
+     const user = await User.findOrFail(reserva.user_id);
+     const servicio = await Servicio.findOrFail(reserva.servicio_id);
+
+     await Notification.create({
+       type: 'create',
+       message: `La reserva para el usuario ${user.username} con el servicio ${servicio.nombre_servicio} ha sido Eliminada.`,
+     });
 
     return response.json({
       res: true,
@@ -429,6 +503,7 @@ class ReservaController {
     const filepath = Helpers.publicPath('despues/' + params.filename)
     return response.download(filepath)
   }
+  
 }
 
 module.exports = ReservaController

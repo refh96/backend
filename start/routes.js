@@ -37,6 +37,13 @@ Route.get('/despues/:filename', async ({ params, response }) => {
 })
 Route.get('antes/:filename', 'ReservaController.verFoto');
 Route.get('despues/:filename', 'ReservaController.verFoto1');
+// Ruta para solicitar el correo de recuperación de contraseña
+Route.post('forgot-password', 'UserController.forgotPassword');
+
+// Ruta para restablecer la contraseña
+Route.post('reset-password', 'UserController.resetPassword');
+
+
 Route.group(() =>{
   Route.post('logout', 'UserController.logout');
   Route.post('profile', 'UserController.profile');
@@ -44,4 +51,47 @@ Route.group(() =>{
   Route.get('reservas/user/:user_id', 'ReservaController.getReservasPorUsuario');
   Route.post('cargar_foto_antes/:id', 'ReservaController.cargarFotoAntes');
   Route.post('cargar_foto_despues/:id', 'ReservaController.cargarFotoDespues');
+  Route.get('/notifications', async ({ request, response }) => {
+    const Notification = use('App/Models/Notification');
+  
+    // Obtener solo las notificaciones no leídas
+    const notifications = await Notification.query()
+      .where('is_read', false)
+      .orderBy('created_at', 'desc')
+      .fetch();
+  
+    return response.json(notifications);
+  });
+  Route.get('/notifications/read', async ({ request, response }) => {
+    const Notification = use('App/Models/Notification');
+  
+    // Obtener solo las notificaciones leídas
+    const notifications = await Notification.query()
+      .where('is_read', true)
+      .orderBy('created_at', 'desc')
+      .fetch();
+  
+    return response.json(notifications);
+  });
+  Route.get('/notifications/all', async ({ request, response }) => {
+    const Notification = use('App/Models/Notification');
+  
+    // Obtener todas las notificaciones (leídas y no leídas)
+    const notifications = await Notification.query()
+      .orderBy('created_at', 'desc')
+      .fetch();
+  
+    return response.json(notifications);
+  });
+  
+  
+  Route.post('/notifications/mark-as-read', async ({ request, response }) => {
+    const Notification = use('App/Models/Notification');
+    const { ids } = request.post();
+  
+    await Notification.query().whereIn('id', ids).update({ is_read: true });
+  
+    return response.json({ message: 'Notificaciones marcadas como leídas.' });
+  });
+  
 }).middleware('auth');

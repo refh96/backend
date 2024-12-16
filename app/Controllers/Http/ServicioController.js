@@ -4,14 +4,14 @@ const Servicio = use('App/Models/Servicio')
 const { validateAll } = use('Validator')
 
 class ServicioController {
-
+  // GET: Obtener todos los servicios
   async index({ request, response }) {
     const input = request.all()
 
-    let serviciosQuery = Servicio.query() // No se necesita cargar atributos
+    let serviciosQuery = Servicio.query()
 
     if (input.txtBuscar != undefined) {
-      serviciosQuery = serviciosQuery.where('categoria', 'like', '%' + input.txtBuscar + '%')
+      serviciosQuery = serviciosQuery.where('categoria', 'like', `%${input.txtBuscar}%`)
     }
 
     const servicios = await serviciosQuery.fetch()
@@ -22,17 +22,24 @@ class ServicioController {
     })
   }
 
-  // POST
+  // POST: Crear un nuevo servicio
   async store({ request, response }) {
-    const input = request.only(['nombre_servicio', 'descripcion', 'categoria', 'precio'])
+    const input = request.only(['nombre_servicio', 'tiempo_estimado', 'detalles_incluidos', 'categoria', 'precio'])
 
-    // Validación separada
+    const existingServicio = await Servicio.findBy('nombre_servicio', input.nombre_servicio)
+    if (existingServicio) {
+      return response.status(400).json({
+        res: false,
+        message: 'El nombre del servicio ya está registrado.'
+      })
+    }
+
+    // Validación
     const validation = await this.validar(input)
     if (validation.fails()) {
       return response.status(400).json(validation.messages())
     }
 
-    // Crear el servicio con el precio ingresado directamente
     const servicio = await Servicio.create(input)
 
     return response.json({
@@ -42,6 +49,8 @@ class ServicioController {
     })
   }
 
+
+  // GET: Obtener un servicio por ID
   async show({ params, response }) {
     const servicio = await Servicio.findOrFail(params.id)
 
@@ -51,20 +60,18 @@ class ServicioController {
     })
   }
 
-  // PUT
+  // PUT: Actualizar un servicio
   async update({ params, request, response }) {
-    const input = request.only(['nombre_servicio', 'descripcion', 'categoria', 'precio'])
+    const input = request.only(['nombre_servicio', 'tiempo_estimado', 'detalles_incluidos', 'categoria', 'precio'])
 
-    // Validación separada
+    // Validación
     const validation = await this.validar(input)
     if (validation.fails()) {
       return response.status(400).json(validation.messages())
     }
 
-    // Obtener el servicio existente
     const servicio = await Servicio.findOrFail(params.id)
 
-    // Actualizar los campos del servicio
     servicio.merge(input)
     await servicio.save()
 
@@ -75,24 +82,26 @@ class ServicioController {
     })
   }
 
-  // DELETE
+
+  // DELETE: Eliminar un servicio
   async destroy({ params, response }) {
     const servicio = await Servicio.findOrFail(params.id)
     await servicio.delete()
 
     return response.json({
       res: true,
-      message: 'Registro eliminado correctamente'
+      message: 'Servicio eliminado correctamente'
     })
   }
 
-  // Función para validaciones
+  // Función de validación
   async validar(input) {
     return validateAll(input, {
       'nombre_servicio': 'required|min:3|max:50',
-      'descripcion': 'required|min:3|max:2000',
+      'tiempo_estimado': 'required|integer|min:1',
+      'detalles_incluidos': 'required',
       'categoria': 'required|min:4|max:20',
-      'precio': 'required|number|min:0'
+      'precio': 'required|number|min:0',
     })
   }
 }

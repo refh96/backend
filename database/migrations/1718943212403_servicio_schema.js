@@ -7,10 +7,11 @@ class ServicioSchema extends Schema {
   up () {
     this.create('servicios', (table) => {
       table.increments()
-      table.string('nombre_servicio').notNullable();
-      table.string('descripcion').notNullable();
-      table.string('categoria').notNullable();
-      table.integer('precio').notNullable();
+      table.string('nombre_servicio').notNullable()
+      table.integer('tiempo_estimado').notNullable() // En minutos para cálculos más fáciles
+      table.string('detalles_incluidos').notNullable()
+      table.string('categoria').notNullable()
+      table.integer('precio').notNullable()
       table.timestamps()
     })
   }

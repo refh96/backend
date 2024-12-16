@@ -3,6 +3,11 @@
 const { type } = require("os");
 const User = use('App/Models/User')
 const { validateAll } = use('Validator')
+const crypto = require('crypto');
+const Database = use('Database');
+const { Resend } = require('resend');
+const resend = new Resend('re_gCUYt5bo_9QmceeYiw74BvDyihwnPKZzU');
+
 
 class UserController {
   async index({ request, response }) {
@@ -67,6 +72,97 @@ class UserController {
     return response.json({
       res: true,
       message: "Usuario eliminado correctamente"
+    });
+  }
+  
+  // Solicitar recuperación de contraseña
+  async forgotPassword({ request, response }) {
+    const { email } = request.all();
+    const user = await User.findBy('email', email);
+
+    if (!user) {
+      return response.status(404).json({
+        res: false,
+        message: 'Usuario no encontrado',
+      });
+    }
+
+    // Generar token y fecha de expiración
+    const token = crypto.randomBytes(20).toString('hex');
+    const expiration = new Date();
+    expiration.setHours(expiration.getHours() + 1); // 1 hora de validez
+
+    // Guardar token en la tabla `password_resets`
+    await Database.table('password_resets').insert({
+      email: user.email,
+      token: token,
+      expires_at: expiration,
+    });
+
+    // Enviar correo con el token
+    const { error } = await resend.emails.send({
+      from: 'Full Wash Conce <no-reply@fullwash.site>',
+      to: [user.email],
+      subject: 'Recuperación de contraseña',
+      html: `
+        <p>Hola ${user.username},</p>
+        <p>Para restablecer tu contraseña, haz clic en el siguiente enlace:</p>
+        <a href="http://localhost:3000/reset-password?token=${token}">Restablecer Contraseña</a>
+        <p>Este enlace es válido por una hora.</p>
+      `,
+    });
+
+    if (error) {
+      return response.status(500).json({
+        res: false,
+        message: 'Error al enviar el correo de recuperación',
+        error,
+      });
+    }
+
+    return response.json({
+      res: true,
+      message: 'Correo de recuperación enviado',
+    });
+  }
+
+  // Restablecer contraseña
+  async resetPassword({ request, response }) {
+    const { token, password } = request.all();
+
+    // Verificar el token y su expiración
+    const resetEntry = await Database.table('password_resets')
+      .where('token', token)
+      .where('expires_at', '>', new Date())
+      .first();
+
+    if (!resetEntry) {
+      return response.status(400).json({
+        res: false,
+        message: 'Token inválido o expirado',
+      });
+    }
+
+    // Actualizar la contraseña del usuario
+    const user = await User.findBy('email', resetEntry.email);
+    if (!user) {
+      return response.status(404).json({
+        res: false,
+        message: 'Usuario no encontrado',
+      });
+    }
+
+    user.password = password;
+    await user.save();
+
+    // Eliminar el token usado
+    await Database.table('password_resets')
+      .where('token', token)
+      .delete();
+
+    return response.json({
+      res: true,
+      message: 'Contraseña restablecida correctamente',
     });
   }
   
